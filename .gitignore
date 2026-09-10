@@ -1,0 +1,10 @@
+node_modules/
+lib/
+dist/
+.venv/
+__pycache__/
+work/
+output/
+*.mp4
+.DS_Store
+*.tgz

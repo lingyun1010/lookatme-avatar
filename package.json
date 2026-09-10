@@ -1,0 +1,43 @@
+{
+  "name": "lookatme-avatar",
+  "version": "0.1.0",
+  "description": "Turn an AI character video into a mouse-following web avatar",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    },
+    "./vanilla": {
+      "types": "./lib/vanilla.d.ts",
+      "import": "./lib/vanilla.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build && npm run build:lib",
+    "build:lib": "tsc -p tsconfig.lib.json && esbuild src/vanilla.ts --bundle --format=esm --outfile=lib/vanilla.js",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.20.0"
+  }
+}

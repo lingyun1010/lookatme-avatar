@@ -1,0 +1,87 @@
+{
+  "center": {
+    "frame": 121
+  },
+  "directions": [
+    {
+      "key": "e",
+      "angle": 0,
+      "frame": 44
+    },
+    {
+      "key": "ese",
+      "angle": 22.5,
+      "frame": 48
+    },
+    {
+      "key": "se",
+      "angle": 45,
+      "frame": 53
+    },
+    {
+      "key": "sse",
+      "angle": 67.5,
+      "frame": 57
+    },
+    {
+      "key": "s",
+      "angle": 90,
+      "frame": 61
+    },
+    {
+      "key": "ssw",
+      "angle": 112.5,
+      "frame": 66
+    },
+    {
+      "key": "sw",
+      "angle": 135,
+      "frame": 72
+    },
+    {
+      "key": "wsw",
+      "angle": 157.5,
+      "frame": 75
+    },
+    {
+      "key": "w",
+      "angle": 180,
+      "frame": 78
+    },
+    {
+      "key": "wnw",
+      "angle": 202.5,
+      "frame": 85
+    },
+    {
+      "key": "nw",
+      "angle": 225,
+      "frame": 93
+    },
+    {
+      "key": "nnw",
+      "angle": 247.5,
+      "frame": 100
+    },
+    {
+      "key": "n",
+      "angle": 270,
+      "frame": 106
+    },
+    {
+      "key": "nne",
+      "angle": 292.5,
+      "frame": 18
+    },
+    {
+      "key": "ne",
+      "angle": 315,
+      "frame": 30
+    },
+    {
+      "key": "ene",
+      "angle": 337.5,
+      "frame": 38
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+import React, { useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { LookAtMeAvatar, type DebugState } from '../index.js';
+import './style.css';
+function Demo() {
+  const [debug, setDebug] = useState(true);
+  const [state, setState] = useState<DebugState>({ angle: 0, key: 'center', isCenter: true });
+  return <main><header><a className="brand" href="./">LookAtMe<span>↗</span></a><span className="badge">FRAME-BASED WEB AVATARS</span></header><section className="intro"><p className="eyebrow">A LITTLE CHARACTER. A LITTLE CODE.</p><h1>A familiar face.<br/><em>A new interaction.</em></h1><p>Turn an AI-generated character video into a lightweight mouse-following web avatar — no rigged 3D model required.</p></section><section className="playground" aria-label="Move your pointer here to explore the avatar"><div className="stage-label"><span className="dot"/> LIVE PLAYGROUND <span>MOVE YOUR POINTER ↗</span></div><div className="avatar"><LookAtMeAvatar frameBasePath="./frames" angleMap="./angle-map.json" size={440} onFrameChange={setState}/></div><div className="readout"><span>{debug ? `${state.key.toUpperCase()} / ${state.isCenter ? 'NEUTRAL' : `${state.angle.toFixed(1)}°`}` : 'FOLLOWING YOUR LEAD'}</span><label><input type="checkbox" checked={debug} onChange={e => setDebug(e.target.checked)}/> Debug</label></div></section><section className="notes"><div><span>01 / PREPARE</span><h2>Find the right frames.</h2><p>Extract your video, inspect the contact sheet, and choose the best view for each direction.</p></div><div><span>02 / MAP</span><h2>Give every view an angle.</h2><p>Explicit selections keep uneven AI motion from becoming uneven interaction.</p></div><div><span>03 / EMBED</span><h2>Drop it into your website.</h2><p>Static images + a small runtime. React or vanilla JavaScript. No server required.</p></div></section><footer><span>2D frames. A sense of dimension.</span><code>&lt;LookAtMeAvatar /&gt;</code></footer></main>;
+}
+createRoot(document.getElementById('root')!).render(<React.StrictMode><Demo/></React.StrictMode>);

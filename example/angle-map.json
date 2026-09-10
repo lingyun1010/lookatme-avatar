@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "center": {
+    "key": "center",
+    "frame": 121,
+    "src": "center.png"
+  },
+  "directions": [
+    {
+      "key": "e",
+      "angle": 0,
+      "frame": 44,
+      "src": "e.png"
+    },
+    {
+      "key": "ese",
+      "angle": 22.5,
+      "frame": 48,
+      "src": "ese.png"
+    },
+    {
+      "key": "se",
+      "angle": 45,
+      "frame": 53,
+      "src": "se.png"
+    },
+    {
+      "key": "sse",
+      "angle": 67.5,
+      "frame": 57,
+      "src": "sse.png"
+    },
+    {
+      "key": "s",
+      "angle": 90,
+      "frame": 61,
+      "src": "s.png"
+    },
+    {
+      "key": "ssw",
+      "angle": 112.5,
+      "frame": 66,
+      "src": "ssw.png"
+    },
+    {
+      "key": "sw",
+      "angle": 135,
+      "frame": 72,
+      "src": "sw.png"
+    },
+    {
+      "key": "wsw",
+      "angle": 157.5,
+      "frame": 75,
+      "src": "wsw.png"
+    },
+    {
+      "key": "w",
+      "angle": 180,
+      "frame": 78,
+      "src": "w.png"
+    },
+    {
+      "key": "wnw",
+      "angle": 202.5,
+      "frame": 85,
+      "src": "wnw.png"
+    },
+    {
+      "key": "nw",
+      "angle": 225,
+      "frame": 93,
+      "src": "nw.png"
+    },
+    {
+      "key": "nnw",
+      "angle": 247.5,
+      "frame": 100,
+      "src": "nnw.png"
+    },
+    {
+      "key": "n",
+      "angle": 270,
+      "frame": 106,
+      "src": "n.png"
+    },
+    {
+      "key": "nne",
+      "angle": 292.5,
+      "frame": 18,
+      "src": "nne.png"
+    },
+    {
+      "key": "ne",
+      "angle": 315,
+      "frame": 30,
+      "src": "ne.png"
+    },
+    {
+      "key": "ene",
+      "angle": 337.5,
+      "frame": 38,
+      "src": "ene.png"
+    }
+  ]
+}
