@@ -22,6 +22,8 @@ Angle Map                     Explicit angles → filenames
 Mouse-Following Web Avatar     Static images + JavaScript
 ```
 
+[**Try the live demo →**](https://lingyun1010.github.io/lookatme/)
+
 ## Demo screenshots
 
 The standalone playground with the sample character:
@@ -31,6 +33,34 @@ The standalone playground with the sample character:
 Move the pointer to switch to an inspected directional frame. The debug readout shows the selected direction and pointer angle:
 
 ![LookAtMe character looking southeast with the live angle debug readout](docs/interaction.png)
+
+## No-code setup with an AI skill / 零基础使用
+
+Use an AI coding assistant that supports installable skills, local terminal execution, uploaded files and visual image inspection (such as Codex). The assistant runs the tools for you. A browser-only chat without those capabilities cannot run this workflow.
+
+**1. Install once.** Paste this into Codex:
+
+> Install the LookAtMe skill from https://github.com/lingyun1010/lookatme/tree/main/skills/lookatme-avatar using the skill installer.
+
+中文安装提示词：
+
+> 请安装这个 Skill：https://github.com/lingyun1010/lookatme/tree/main/skills/lookatme-avatar
+
+The skill is available on the next turn after installation. If your assistant does not refresh skills automatically, start a new task/session.
+
+**2. Upload your character video, then say:**
+
+> Use $lookatme-avatar to turn my uploaded video into a mouse-following avatar. Inspect the frames and choose representative directions, generate the assets, start a local preview, and open it for me. Keep everything local; do not publish my video or avatar.
+
+中文使用提示词：
+
+> 使用 $lookatme-avatar，根据我上传的视频生成 LookAtMe avatar。请检查视频帧并选择合适的方向，生成素材，启动本地预览网页并帮我打开。只在本地生成，不要发布我的视频或头像。
+
+The skill sets up an isolated project, installs project dependencies, extracts frames, asks the assistant to visually select poses, and serves the generated page on an available localhost port. No code editing is required from the user. Initial setup still needs Git, Python 3.10+, Node.js 22.12+, FFmpeg/ffprobe, network access, and any permissions requested by the host. The assistant can help with missing dependencies; it cannot bypass installation approvals.
+
+**Selection is AI-assisted, not automatic pose estimation.** It must inspect this video's images, never divide its timeline into equal angles. If the assistant cannot inspect images, it asks you to choose from a numbered contact sheet. Missing or distorted directions cannot be invented. Backgrounds and watermarks are preserved. Video processing is local, but an online assistant's visual inspection may send extracted images to its model provider.
+
+The result contains reusable `frames/`, `angle-map.json`, `contact-sheet.jpg`, `lookatme.js` and `preview.html`. The local server must remain running; the assistant provides its URL and restart command. The [public demo](https://lingyun1010.github.io/lookatme/) is a sample, not an upload service.
 
 ## Try the included character
 
@@ -111,7 +141,13 @@ To run the main demo with your assets, replace `example/frames/` and `example/an
 
 ## React integration
 
-The package is not published to npm. Either copy `src/core/`, `src/component/`, and `src/index.ts` into your project's `src/lookatme/`, or build and install a local package:
+The npm release is prepared but currently awaiting account 2FA authorisation. Once published, install the React/vanilla runtime with:
+
+```bash
+npm install lookatme-avatar
+```
+
+The npm package contains the runtime and Skill; video preparation uses the Skill workflow above. You can also copy `src/core/`, `src/component/`, and `src/index.ts` into your project's `src/lookatme/`, or build and install a local package:
 
 ```bash
 # Inside LookAtMe
@@ -225,7 +261,7 @@ The demo uses relative deployment paths. `.github/workflows/pages.yml` tests, bu
 2. In **Settings → Pages → Build and deployment**, select **GitHub Actions**.
 3. Run the workflow or push to `main`. The deployment job reports the live URL.
 
-The repository and workflow are ready locally; a live GitHub deployment requires pushing to a remote and enabling Pages. To test a sub-path locally, serve the parent of a directory containing `dist/` and visit that directory's URL.
+The official demo is live at https://lingyun1010.github.io/lookatme/. For your own fork, enable Pages and push to its remote as described above. To test a sub-path locally, serve the parent of a directory containing `dist/` and visit that directory's URL.
 
 ## Attribution and licence
 

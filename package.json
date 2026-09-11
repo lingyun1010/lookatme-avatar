@@ -6,7 +6,11 @@
   "license": "MIT",
   "files": [
     "lib",
-    "README.md"
+    "README.md",
+    "skills",
+    "docs/demo.png",
+    "docs/interaction.png",
+    "example/ASSETS.md"
   ],
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -25,7 +29,8 @@
     "build": "tsc --noEmit && vite build && npm run build:lib",
     "build:lib": "tsc -p tsconfig.lib.json && esbuild src/vanilla.ts --bundle --format=esm --outfile=lib/vanilla.js",
     "test": "node --import tsx --test tests/*.test.ts",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "prepublishOnly": "npm test && npm run build"
   },
   "peerDependencies": {
     "react": ">=18"
@@ -39,5 +44,28 @@
     "vite": "^7.1.5",
     "esbuild": "^0.25.0",
     "tsx": "^4.20.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lingyun1010/lookatme.git"
+  },
+  "homepage": "https://lingyun1010.github.io/lookatme/",
+  "bugs": {
+    "url": "https://github.com/lingyun1010/lookatme/issues"
+  },
+  "keywords": [
+    "avatar",
+    "react",
+    "mouse-following",
+    "frame-animation",
+    "lookatme"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

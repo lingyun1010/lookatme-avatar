@@ -11,3 +11,10 @@
 - Responsive check at 390px viewport: no horizontal overflow.
 - Generated vanilla preview loaded and changed frames with pointer input. Raw video background and watermark are preserved; background removal is intentionally outside v1.
 - GitHub Pages workflow provided but not executed remotely.
+
+## Skill workflow verification
+
+- Skill frontmatter validator passed.
+- New-project `prepare` cloned the public repository, installed isolated dependencies, built the runtime and extracted all 121 reference frames into numbered contact sheets.
+- `build` generated a preview from the previously visually inspected reference selection. This exercises the helper, not an independent evaluation of AI pose-selection accuracy.
+- npm prepublish tests and build passed; first publication was rejected by npm E403 pending account 2FA.
