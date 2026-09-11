@@ -47,9 +47,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lingyun1010/lookatme.git"
+    "url": "git+https://github.com/lingyun1010/lookatme.git",
+    "directory": "."
   },
-  "homepage": "https://lingyun1010.github.io/lookatme/",
+  "homepage": "https://www.npmjs.com/package/lookatme-avatar",
   "bugs": {
     "url": "https://github.com/lingyun1010/lookatme/issues"
   },
@@ -67,5 +68,8 @@
     "react": {
       "optional": true
     }
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }
