@@ -22,6 +22,16 @@ Angle Map                     Explicit angles → filenames
 Mouse-Following Web Avatar     Static images + JavaScript
 ```
 
+## Demo screenshots
+
+The standalone playground with the sample character:
+
+![LookAtMe demo with the neutral character and setup overview](docs/demo.png)
+
+Move the pointer to switch to an inspected directional frame. The debug readout shows the selected direction and pointer angle:
+
+![LookAtMe character looking southeast with the live angle debug readout](docs/interaction.png)
+
 ## Try the included character
 
 Requires Node.js 22.12+ and npm.
