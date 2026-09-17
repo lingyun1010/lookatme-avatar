@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { LookAtMeAvatar, type AvatarFrameSet, type DebugState } from '../index.js';
+import { type AvatarFrameSet, type DebugState } from '../index.js';
+import { LookAtMeAvatar } from '../react.js';
 import './style.css';
 import { PhotoAiDemo } from './PhotoAiDemo.js';
 const manualFrames: AvatarFrameSet = {

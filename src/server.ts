@@ -4,4 +4,3 @@ export type { OpenAIImageGenerationProviderOptions } from './server/photo/openai
 export { LocalAvatarImageStorage } from './server/photo/localStorage.js';
 export { preprocessPortrait } from './server/photo/preprocess.js';
 export { SharpGeneratedImageValidator } from './server/photo/validation.js';
-export { createPhotoDemoMiddleware } from './server/photo/demoMiddleware.js';
