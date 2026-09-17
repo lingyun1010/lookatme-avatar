@@ -8,7 +8,7 @@ Video extraction ─────┼→ AvatarFrameSet → LookAtMe Renderer
 Your own images ──────┘
 ```
 
-[View the public sample](https://lingyun1010.github.io/lookatme/) · [Repository](https://github.com/lingyun1010/lookatme)
+[View the public sample](https://lingyun1010.github.io/lookatme-avatar/) · [Repository](https://github.com/lingyun1010/lookatme-avatar)
 
 LookAtMe is a reusable SDK, not a permanently hosted backend. Applications install the package and choose only the pieces they need:
 
