@@ -27,7 +27,7 @@ The development server in this repository exists only to demonstrate and test th
 The package is not currently published to the npm registry. Install the current repository directly from GitHub:
 
 ```bash
-npm install github:lingyun1010/lookatme
+npm install github:lingyun1010/lookatme-avatar
 ```
 
 The installed package name is `lookatme-avatar`, so imports use that name. GitHub installation runs the package's library-only `prepare` build.
@@ -35,7 +35,7 @@ The installed package name is `lookatme-avatar`, so imports use that name. GitHu
 For local development of LookAtMe itself:
 
 ```bash
-git clone https://github.com/lingyun1010/lookatme.git
+git clone https://github.com/lingyun1010/lookatme-avatar.git
 cd lookatme
 npm install
 npm test
