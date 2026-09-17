@@ -1,132 +1,103 @@
 # LookAtMe
 
-### Turn an AI Character Video into a Mouse-Following Web Avatar
-
-Turn an AI-generated character video into a lightweight mouse-following web avatar — no rigged 3D model required.
-
-LookAtMe is a small, reusable **pseudo-3D, 2D frame-based interaction**. It selects a still image that faces the pointer. It is not a rigged 3D model, a video player, or a portfolio generator.
-
-## LookAtMe v2 architecture
-
-v2 separates frame production from pointer rendering. The renderer has no video, AI-provider, filename, dimension, or character-specific assumptions:
+LookAtMe is an open-source mouse-follow avatar engine for web projects. Use AI-generated frames, video-derived frames, or your own images. The renderer is independent of how the avatar frames are created.
 
 ```text
-Video → VideoFrameProducer ─┐
-                            ├→ AvatarFrameSet → DirectionalAvatarRenderer
-Photo → PhotoAIFrameProducer ─┘
-Manual/static images ────────→ AvatarFrameSet → DirectionalAvatarRenderer
+AI photo generation ──┐
+Video extraction ─────┼→ AvatarFrameSet → LookAtMe Renderer
+Your own images ──────┘
 ```
 
-The stable renderer-facing contract preserves arbitrary and uneven direction angles:
+[View the public sample](https://lingyun1010.github.io/lookatme/) · [Repository](https://github.com/lingyun1010/lookatme)
+
+LookAtMe is a reusable SDK, not a permanently hosted backend. Applications install the package and choose only the pieces they need:
+
+```text
+LookAtMe SDK
+├── browser/core       AvatarFrameSet, validation, vanilla renderer
+├── react              React component adapter
+├── producers          manual, video, and photo-generation contracts
+└── server             photo orchestration, OpenAI adapter, local storage helpers
+```
+
+The development server in this repository exists only to demonstrate and test the SDK. A consuming application does not run or deploy the LookAtMe demo server.
+
+## Installation
+
+The package is not currently published to the npm registry. Install the current repository directly from GitHub:
+
+```bash
+npm install github:lingyun1010/lookatme
+```
+
+The installed package name is `lookatme-avatar`, so imports use that name. GitHub installation runs the package's library-only `prepare` build.
+
+For local development of LookAtMe itself:
+
+```bash
+git clone https://github.com/lingyun1010/lookatme.git
+cd lookatme
+npm install
+npm test
+npm run build
+```
+
+## A. I already have avatar images
+
+No API key, AI provider, Python, or LookAtMe server is required. Put the images in your application's public assets and provide an `AvatarFrameSet`:
 
 ```ts
-interface AvatarFrameSet {
-  version: 2;
-  center: { key: string; src: string; frame?: number };
-  directions: Array<{ key: string; src: string; angle: number; frame?: number }>;
-  metadata?: {
-    width?: number;
-    height?: number;
-    aspectRatio?: number;
-    source?: { type: 'video' | 'photo' | 'manual' | string };
-  };
+import {
+  createLookAtMeAvatar,
+  type AvatarFrameSet
+} from 'lookatme-avatar';
+
+const frames: AvatarFrameSet = {
+  version: 2,
+  center: { key: 'center', src: '/avatar/center.png' },
+  directions: [
+    { key: 'right', angle: 0, src: '/avatar/right.png' },
+    { key: 'down', angle: 90, src: '/avatar/down.png' },
+    { key: 'left', angle: 180, src: '/avatar/left.png' },
+    { key: 'up', angle: 270, src: '/avatar/up.png' }
+  ],
+  metadata: { source: { type: 'manual' } }
+};
+
+const avatar = createLookAtMeAvatar({
+  container: '#avatar',
+  frames,
+  size: 480
+});
+
+await avatar.ready;
+// Later: avatar.destroy();
+```
+
+Missing diagonals are fine: the renderer selects the nearest configured angle. Frame URLs may be relative, absolute, blob, or data URLs supported by the browser.
+
+### React
+
+React is isolated in its own entry point:
+
+```tsx
+import { LookAtMeAvatar } from 'lookatme-avatar/react';
+import type { AvatarFrameSet } from 'lookatme-avatar';
+
+export function Character({ frames }: { frames: AvatarFrameSet }) {
+  return <LookAtMeAvatar frames={frames} width="100%" size={480} />;
 }
 ```
 
-`center` and at least one direction are required. Additional directions are optional: nearest-angle selection is the predictable fallback when diagonals or other poses are absent. Sources can be relative image paths, absolute URLs, or browser-supported data/blob URLs. Metadata belongs to producers and is ignored by the renderer.
+### Standalone HTML
 
-The video tools, manual adapter, and server-side `PhotoAIFrameProducer` are independent producers. Photo generation creates a canonical styled center from the portrait first, then uses that center as the identity reference for left, right, up, and down. All three paths finish as the same `AvatarFrameSet`.
+The framework-free bundled module is exported from `lookatme-avatar/vanilla`. It exposes the same `createLookAtMeAvatar()` adapter and contains no React or server dependency.
 
-```text
-Character Image
-      ↓
-AI Rotation Video             Bring your own video
-      ↓
-Frame Extraction              FFmpeg: every decoded frame
-      ↓
-Contact Sheet                 Numbered visual candidates
-      ↓
-Directional Frame Selection   Human-inspected representative views
-      ↓
-Angle Map                     Explicit angles → filenames
-      ↓
-Mouse-Following Web Avatar     Static images + JavaScript
-```
+## B. I want LookAtMe to generate an avatar from my portrait
 
-[**Try the live demo →**](https://lingyun1010.github.io/lookatme/)
+Photo generation runs inside **your application's server environment**. Your backend imports `lookatme-avatar/server`, supplies its own storage choice and `OPENAI_API_KEY`, and returns the resulting `AvatarFrameSet` to its frontend.
 
-## Demo screenshots
-
-The standalone playground with the sample character:
-
-![LookAtMe demo with the neutral character and setup overview](docs/demo.png)
-
-Move the pointer to switch to an inspected directional frame. The debug readout shows the selected direction and pointer angle:
-
-![LookAtMe character looking southeast with the live angle debug readout](docs/interaction.png)
-
-## No-code setup with an AI skill / 零基础使用
-
-Use an AI coding assistant that supports installable skills, local terminal execution, uploaded files and visual image inspection (such as Codex). The assistant runs the tools for you. A browser-o[...]
-
-**1. Install once.** Paste this into Codex:
-
-> Install the LookAtMe skill from https://github.com/lingyun1010/lookatme/tree/main/skills/lookatme-avatar using the skill installer.
-
-中文安装提示词：
-
-> 请安装这个 Skill：https://github.com/lingyun1010/lookatme/tree/main/skills/lookatme-avatar
-
-The skill is available on the next turn after installation. If your assistant does not refresh skills automatically, start a new task/session.
-
-**2. Upload your character video, then say:**
-
-> Use $lookatme-avatar to turn my uploaded video into a mouse-following avatar. Inspect the frames and choose representative directions, generate the assets, start a local preview, and open it for[...]
-
-中文使用提示词：
-
-> 使用 $lookatme-avatar，根据我上传的视频生成 LookAtMe avatar。请检查视频帧并选择合适的方向，生成素材，启动本地预览网页并帮我打开。只在本地生��[...]
-
-The skill sets up an isolated project, installs project dependencies, extracts frames, asks the assistant to visually select poses, and serves the generated page on an available localhost port. No[...]
-
-**Selection is AI-assisted, not automatic pose estimation.** It must inspect this video's images, never divide its timeline into equal angles. If the assistant cannot inspect images, it asks you t[...]
-
-The result contains reusable `frames/`, canonical `avatar-frame-set.json`, backward-compatible `angle-map.json`, `contact-sheet.jpg`, `lookatme.js` and `preview.html`. The local server must remain running; the assistant provides its URL and restart command. The [public demo](https://lingyun1010.github.io/lookatme/) is a sample, not an upload service.
-
-## Try the included character
-
-Requires Node.js 22.12+ and npm.
-
-```bash
-npm install
-npm run dev
-```
-
-Open the local URL printed by Vite. Move the cursor around the portrait; its middle is a neutral dead zone. The debug checkbox shows the chosen frame and cursor angle. On touch devices, moving a t[...]
-
-```bash
-npm test
-npm run build
-npm run preview
-# Optional processing-tool tests, after installing Python requirements:
-.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
-```
-
-`dist/` is the standalone demo. `lib/` contains the reusable React library, types, and a bundled vanilla module. No Python, FFmpeg, AI service, API key, or server is needed at runtime.
-
-## Photo AI demo
-
-Photo generation is server-only. Copy the environment template and provide an API key—the key is read by Vite's local server middleware and is never included in browser code:
-
-```bash
-cp .env.example .env
-# Edit .env and set OPENAI_API_KEY
-npm run dev
-```
-
-Open the printed localhost URL and use the **Photo AI** section. The server validates and normalizes PNG, JPEG, or WebP portraits, generates five 1024×1024 PNG frames, stores them under ignored `.lookatme/generated/`, and returns their local URLs in an `AvatarFrameSet`.
-
-The OpenAI adapter uses the Image API's edit endpoint with `gpt-image-2`, medium quality, high input fidelity, and PNG output. The library's provider boundary is independent of OpenAI:
+LookAtMe does not need a separate deployed service:
 
 ```ts
 import {
@@ -137,226 +108,181 @@ import {
 } from 'lookatme-avatar/server';
 
 const producer = new PhotoAIFrameProducer({
-  provider: new OpenAIImageGenerationProvider(),
-  storage: new LocalAvatarImageStorage('.lookatme/generated'),
+  provider: new OpenAIImageGenerationProvider({
+    apiKey: process.env.OPENAI_API_KEY
+  }),
+  storage: new LocalAvatarImageStorage('./generated', '/generated'),
   validator: new SharpGeneratedImageValidator()
 });
 
 const frames = await producer.produce({
-  image: uploadedBytes,
+  image: uploadedImageBytes,
   mimeType: 'image/jpeg',
-  style: 'felt@1'
+  style: 'felt@1',
+  preset: 'balanced'
 });
 ```
 
-Styles are versioned (`felt@1`, `cartoon@1`, `cinematic-3d@1`, and `anime@1`). A partial directional failure reports the frame-set ID and completed directions; `regenerateDirection()` can replace only the failed frame.
+Do not import `lookatme-avatar/server` from browser code. It intentionally depends on Node.js, `openai`, `sharp`, and filesystem helpers. Production applications can replace local storage by implementing `AvatarImageStorage` for S3, Cloudflare R2, Vercel Blob, Supabase Storage, or another durable store.
 
-## Prepare your own video
-
-Install FFmpeg (including `ffprobe`) and Python 3.10+. Then, from the repository root:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r tools/requirements.txt
-npm run build:lib
-python tools/extract_frames.py character-video.mp4 --output work
-python tools/make_contact_sheet.py work/frames --output work/contact-sheet.jpg
-```
-
-Extraction saves `work/video-info.json` containing video stream metadata, and `work/frames/000001.png`, etc. Frame numbers are **1-based decoded visual frame order**, not encoded I-frame indices. [...]
-
-Inspect the sheets and write `selection.json`:
-
-```json
-{
-  "center": { "frame": 121 },
-  "directions": [
-    { "key": "e", "angle": 0, "frame": 44 },
-    { "key": "s", "angle": 90, "frame": 61 },
-    { "key": "w", "angle": 180, "frame": 78 },
-    { "key": "n", "angle": 270, "frame": 106 }
-  ]
-}
-```
-
-These example indices belong to the original sample video only. Choose your own indices for your video. `example/selection.json` preserves all 16 inspected sample directions.
-
-**Never assume equal time intervals mean equal rotation angles.** AI videos may repeat poses, distort faces, or rotate inconsistently. Choose representative images visually. Four directions work;[...]
-
-```bash
-python tools/build_angle_map.py --frames work/frames --selection selection.json --output output --max-size 768
-python -m http.server 8080 --directory output
-```
-
-Open [the generated preview](http://localhost:8080/preview.html). Serve over HTTP; browsers may block JSON/modules when opened with `file://`.
+### Generation flow
 
 ```text
-output/
-├── frames/              Optimised PNGs; alpha preserved; no upscaling
-│   ├── center.png
-│   ├── e.png
-│   └── ...
-├── angle-map.json
-├── avatar-frame-set.json Canonical v2 contract with video provenance
-├── contact-sheet.jpg    Selected views, labelled with source indices
-├── preview.html
-└── lookatme.js          Standalone vanilla runtime for the preview
+Uploaded portrait
+      ↓
+Preprocess and normalize
+      ↓
+Generate canonical CENTER
+      ↓
+Generate every direction from CENTER
+      ↓
+Validate and store images
+      ↓
+AvatarFrameSet
 ```
 
-The builder validates keys, source files, identical image dimensions, unique angles and positive frame indices. A frame may deliberately serve multiple directions. Existing nonempty output folder[...]
+The canonical center is always generated first. All directional frames use it as their identity and style reference.
 
-To run the main demo with your assets, replace `example/frames/` and `example/angle-map.json` with the generated versions, then restart `npm run dev`.
+| Preset | Total frames | Directional angles | Tradeoff |
+| --- | ---: | --- | --- |
+| `fast` | 5 | Every 90° | Quickest and cheapest |
+| `balanced` | 9 | Every 45° | Recommended default |
+| `smooth` | 13 | Every 30° | More directional fidelity and generation work |
 
-## React integration
+Styles are versioned: `felt@1`, `cartoon@1`, `cinematic-3d@1`, and `anime@1`. Partial failures retain completed files. Use `regenerateFrame(frameSetId, style, angle)` to replace one diagonal or arbitrary-angle frame without regenerating the avatar.
 
-The runtime is published to npm as `lookatme-avatar`. Install the React/vanilla runtime with:
+The included OpenAI adapter uses the working `gpt-image-2` image-edit request with medium quality and PNG output. It deliberately does not send `input_fidelity`.
 
-```bash
-npm install lookatme-avatar
+## C. Use LookAtMe with an AI coding agent
+
+LookAtMe also supports an agent-assisted workflow that does not require the OpenAI API provider:
+
+```text
+AI coding environment
+       ↓
+Generate or prepare directional images
+       ↓
+LookAtMe manual frames / AvatarFrameSet
+       ↓
+LookAtMe renderer
 ```
 
-The npm package contains the runtime and Skill; video preparation uses the Skill workflow above. You can also copy `src/core/`, `src/component/`, and `src/index.ts` into your project's `src/looka[...]
+1. Add LookAtMe to the target project.
+2. Add or attach a portrait.
+3. Ask Codex, Claude Code, or another coding agent to inspect this README and the package exports.
+4. If that environment has an image-generation capability, ask it to create and save the directional frames in the target project.
+5. Otherwise, generate the frames with any external image tool or provide them yourself.
+6. Build an `AvatarFrameSet` and mount the existing renderer.
 
-```bash
-# Inside LookAtMe
-npm run build
-npm pack
-# Inside the consuming React application
-npm install /absolute/path/to/lookatme/lookatme-avatar-0.1.0.tgz
+This workflow uses the coding environment's own tools and permissions. LookAtMe cannot programmatically consume Codex, Claude, ChatGPT, or other subscription quota.
+
+Copy-paste prompt:
+
+```text
+Add a mouse-follow avatar to this project using LookAtMe.
+
+Repository:
+https://github.com/lingyun1010/lookatme
+
+Inspect the LookAtMe README and package exports first.
+
+Use my portrait to create the avatar frames if your environment has image-generation capability.
+Otherwise tell me which directional images I need to provide.
+
+Do not recreate the mouse-follow implementation.
+Use LookAtMe's AvatarFrameSet and existing renderer.
+
+Integrate the result naturally into this project's existing UI.
+
+Do not deploy or commit anything.
 ```
 
-Copy the generated `frames/` and `angle-map.json` into your application's `public/avatar/` directory.
+## Video-to-frames workflow
 
-```tsx
-import { LookAtMeAvatar } from 'lookatme-avatar';
-// If copying source: import { LookAtMeAvatar } from './lookatme';
+LookAtMe retains the original local video workflow:
 
-export function Character() {
-  return (
-    <LookAtMeAvatar
-      frameBasePath="./avatar/frames"
-      frames="./avatar/avatar-frame-set.json"
-      size={600}
-      deadZone={0.12}
-    />
-  );
-}
+```text
+Character rotation video
+      ↓
+Extract every decoded frame
+      ↓
+Inspect numbered contact sheets
+      ↓
+Select representative directions
+      ↓
+avatar-frame-set.json
+      ↓
+LookAtMe renderer
 ```
 
-For a Vite site deployed under `/my-site/`, use its deployment base explicitly:
+Do not infer angles from equal timeline intervals: generated videos can repeat, distort, or rotate unevenly. Select frames visually. The builder outputs reusable frames, a canonical `avatar-frame-set.json`, a legacy `angle-map.json`, a contact sheet, and a standalone preview.
 
-```tsx
-const base = import.meta.env.BASE_URL;
-<LookAtMeAvatar
-  frameBasePath={`${base}avatar/frames`}
-  angleMap={`${base}avatar/angle-map.json`}
-  width="100%"
-  height={480}
-  objectFit="contain"
-  tracking="avatar"
-/>
-```
+The installable `lookatme-avatar` skill can run this workflow in compatible coding environments. It processes video locally; visual frame inspection may still be sent to the coding assistant's model provider.
 
-A leading `/avatar` always refers to the domain root; it will not automatically include a GitHub Pages repository path. Relative URLs resolve against `document.baseURI`, so nested router routes s[...]
+## Public package entry points
 
-| Prop | Default | Meaning |
+| Import | Environment | Contents |
 | --- | --- | --- |
-| `frames` | required | `AvatarFrameSet`, legacy v1 map, or JSON URL |
-| `frameBasePath` | `.` | Base directory for relative frame sources |
-| `angleMap` | unset | Deprecated v1 alias for `frames` |
-| `size` | `600` | Width in pixels or CSS length; square when height omitted |
-| `width`, `height` | unset | Override dimensions; width is capped at 100% of parent |
-| `objectFit` | `contain` | Image fitting mode |
-| `deadZone` | `0.12` | Radius / shorter tracking dimension, range 0–1 |
-| `tracking` | `avatar` | `avatar` midpoint or `viewport` midpoint |
-| `alt` | Character following the pointer | Accessible image description |
-| `onFrameChange` | unset | Debug callback `{ angle, key, isCenter }`, at most once per animation frame |
-| `onError` | unset | Load/validation error callback; React also displays an error |
+| `lookatme-avatar` | Browser/core | `createLookAtMeAvatar`, `mountDirectionalAvatar`, frame contracts, normalizers, manual/video helpers, preset metadata |
+| `lookatme-avatar/react` | Browser + React | `LookAtMeAvatar` |
+| `lookatme-avatar/vanilla` | Browser | Standalone framework-free renderer adapter |
+| `lookatme-avatar/server` | Node.js server only | `PhotoAIFrameProducer`, OpenAI provider, Sharp validation/preprocessing, local storage |
 
-The component never intercepts pointer events. Without pointer movement it stays neutral. It resets on pointer exit or window blur. Unmounting removes observers/listeners; prop changes reload the[...]
+Browser/core imports do not load `openai`, `sharp`, filesystem modules, or demo middleware. Server helpers do not require the LookAtMe development server.
 
-## Vanilla JavaScript integration
-
-Copy `lib/vanilla.js` into your website alongside your generated assets. It has no React dependency and no external imports.
-
-```html
-<div id="lookatme-avatar"></div>
-<script type="module">
-  import { createLookAtMeAvatar } from './vanilla.js';
-  const avatar = createLookAtMeAvatar({
-    container: '#lookatme-avatar',
-    frameBasePath: './avatar/frames',
-    frames: './avatar/avatar-frame-set.json',
-    size: 600,
-    deadZone: 0.12
-  });
-  await avatar.ready; // catch errors in your application's UI
-  // On page teardown: avatar.destroy();
-</script>
-```
-
-Bundler consumers can import from `lookatme-avatar/vanilla`. Options match React. `element` accepts a selector or HTMLElement; only the owned avatar child is removed on teardown.
-
-`container` is the v2 mount option; the original `element` name remains supported. Both adapters call the same engine:
+## AvatarFrameSet contract
 
 ```ts
-import { mountDirectionalAvatar } from 'lookatme-avatar';
-
-const avatar = mountDirectionalAvatar({ container, frames, deadZone: 0.12 });
-await avatar.ready;
-avatar.destroy(); // listeners, RAF work, observer, fetch, and owned DOM are cleaned up
-```
-
-### v1 migration and compatibility
-
-Existing `angleMap` + `frameBasePath` React usage and `element` + `angleMap` vanilla usage continue to work. v1 maps are normalized to v2 at the renderer boundary. New code should rename `angleMap` to `frames`, use `container` in vanilla JavaScript, and prefer the generated `avatar-frame-set.json`. No frame assets or direction angles need to change.
-
-## Angle map and architecture
-
-```json
-{
-  "version": 1,
-  "center": { "key": "center", "src": "center.png", "frame": 121 },
-  "directions": [
-    { "key": "e", "angle": 0, "src": "e.png", "frame": 44 },
-    { "key": "n", "angle": 270, "src": "n.png", "frame": 106 }
-  ]
+interface AvatarFrameSet {
+  version: 2;
+  center: { key: string; src: string; frame?: number };
+  directions: Array<{
+    key: string;
+    src: string;
+    angle: number;
+    frame?: number;
+  }>;
+  metadata?: {
+    width?: number;
+    height?: number;
+    aspectRatio?: number;
+    source?: { type: string; [key: string]: unknown };
+  };
 }
 ```
 
-<<<<<<< HEAD
-Angles use screen coordinates: **east 0°, south 90°, west 180°, north 270°**. The runtime picks the smallest circular angular distance. Equal distances prefer the first configured entry. `fra[...]
-=======
-Angles use screen coordinates: **east 0°, south 90°, west 180°, north 270°**. The runtime picks the smallest circular angular distance. Equal distances prefer the first configured entry. `frame` is provenance only. Relative sources are joined to `frameBasePath`; absolute and browser-supported image URLs pass through unchanged. Keys and angles must be unique.
->>>>>>> 390f783 (Generate directionl frames by OpenAI)
+Screen-coordinate angles are right 0°, down 90°, left 180°, and up 270°. Direction arrays may be sparse or uneven. The renderer selects the closest circular angle and uses `center` inside its neutral dead zone.
 
-- `tools/`: video inspection/extraction, paginated contact sheets, explicit selections → optimised static output.
-- `example/`: reusable sample assets and mappings; Vite serves this as its public asset directory.
-- `src/core/`: pure geometry, map validation, decoding, shared pointer/render lifecycle.
-- `src/producers/video/`: adapts the existing video pipeline output to `AvatarFrameSet`.
-- `src/producers/photo/`: provider-independent photo contracts, styles, prompts, and direction mapping.
-- `src/server/photo/`: Sharp preprocessing/validation, local storage, OpenAI adapter, orchestration, and local demo middleware.
-- `src/producers/manual.ts`: validation adapter for supplied/static frame sets.
-- `src/component/`: typed React adapter. Pointer lifecycle stays in the shared runtime instead of a React-specific hook.
-- `src/vanilla.ts`: framework-free adapter; builds to a single ES module.
-- `src/demo/`: neutral playground, isolated from library code.
-- `docs/extraction.md`: reference implementation findings and removed portfolio coupling.
+## Development and demonstration tooling
 
-All frames are decoded before interaction starts and retained in the DOM. Visibility changes occur in one animation frame, with no opacity fades or brightness blending. Startup waits for the full[...]
+The repository demo proves that video, manual, and Photo AI producers converge into the same renderer. It is not a backend deployment template or required runtime service.
 
-## GitHub Pages
+```bash
+cp .env.example .env
+# Set OPENAI_API_KEY only if testing real Photo AI generation.
+npm run dev
+```
 
-The demo uses relative deployment paths. `.github/workflows/pages.yml` tests, builds and deploys `dist/` on pushes to `main`.
+Open the localhost URL printed by Vite. Generated development assets are written beneath ignored `.lookatme/generated/`.
 
-1. Create a GitHub repository named `lookatme` and push this standalone repository to it.
-2. In **Settings → Pages → Build and deployment**, select **GitHub Actions**.
-3. Run the workflow or push to `main`. The deployment job reports the live URL.
+Without an API key, the video/manual demos and all browser renderer APIs continue to work. Unit tests use mock generation providers and never make paid OpenAI calls.
 
-The official demo is live at https://lingyun1010.github.io/lookatme/. For your own fork, enable Pages and push to its remote as described above. To test a sub-path locally, serve the parent of a [...]
+```bash
+npm test
+npm run build
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
+```
 
-## Attribution and licence
+## Lifecycle and compatibility
 
-New LookAtMe code is MIT licensed; see `LICENSE`. Sample character assets and the selected-frame contact sheet were supplied by Lingyun Zhao's [reference portfolio](https://github.com/lingyun1010[...]
+`createLookAtMeAvatar()` and `mountDirectionalAvatar()` return `{ ready, destroy() }`. Destruction removes listeners, animation-frame work, observers, fetches, and owned DOM.
 
-No authentication, database, payments, production CDN, job queue, advanced identity scoring, or automatic pose estimation are included.
+Legacy v1 angle maps and the original `angleMap`, `frameBasePath`, and vanilla `element` options remain supported. New code should use `frames` and `container`.
+
+## Scope
+
+LookAtMe does not provide authentication, billing, user accounts, a database, production object storage, job queues, a hosted generation service, live webcam tracking, talking avatars, or a 3D mesh.
+
+## Licence and sample assets
+
+LookAtMe code is MIT licensed; see `LICENSE`. Sample character assets are demonstration material and have separate attribution in `example/ASSETS.md`.

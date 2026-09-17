@@ -24,6 +24,10 @@
       "types": "./lib/vanilla.d.ts",
       "import": "./lib/vanilla.js"
     },
+    "./react": {
+      "types": "./lib/react.d.ts",
+      "import": "./lib/react.js"
+    },
     "./server": {
       "types": "./lib/server.d.ts",
       "import": "./lib/server.js"
@@ -33,6 +37,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build && npm run build:lib",
     "build:lib": "tsc -p tsconfig.lib.json && esbuild src/vanilla.ts --bundle --format=esm --outfile=lib/vanilla.js",
+    "prepare": "npm run build:lib",
     "test": "node --import tsx --test tests/*.test.ts",
     "preview": "vite preview --host 127.0.0.1",
     "prepublishOnly": "npm test && npm run build"

@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { avatarStyles } from '../../producers/photo/styles.js';
-import type { AvatarStyleId } from '../../producers/photo/types.js';
+import type { AvatarFramePreset, AvatarStyleId } from '../../producers/photo/types.js';
 import { LocalAvatarImageStorage } from './localStorage.js';
 import { OpenAIImageGenerationProvider } from './openaiProvider.js';
 import { PartialPhotoGenerationError, PhotoAIFrameProducer } from './PhotoAIFrameProducer.js';
@@ -29,13 +29,13 @@ export function createPhotoDemoMiddleware(root = path.resolve('.lookatme/generat
     if (request.method !== 'POST' || pathname !== '/api/photo-avatar') return next();
     try {
       const raw = await body(request); const requestBody = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer; const form = await new Request('http://localhost/api/photo-avatar', { method: 'POST', headers: request.headers as HeadersInit, body: requestBody }).formData();
-      const image = form.get('image'); const style = form.get('style');
-      if (!(image instanceof File) || typeof style !== 'string') return json(response, 400, { error: 'An image and style are required.' });
+      const image = form.get('image'); const style = form.get('style'); const preset = form.get('preset') ?? 'balanced';
+      if (!(image instanceof File) || typeof style !== 'string' || typeof preset !== 'string') return json(response, 400, { error: 'An image, style, and preset are required.' });
       const producer = new PhotoAIFrameProducer({ provider: new OpenAIImageGenerationProvider(), storage, validator: new SharpGeneratedImageValidator() });
-      const frames = await producer.produce({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId });
+      const frames = await producer.produce({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId, preset: preset as AvatarFramePreset });
       return json(response, 200, frames);
     } catch (error) {
-      if (error instanceof PartialPhotoGenerationError) return json(response, 502, { error: error.message, frameSetId: error.frameSetId, failedDirection: error.failedDirection, completedDirections: error.completedDirections });
+      if (error instanceof PartialPhotoGenerationError) return json(response, 502, { error: error.message, frameSetId: error.frameSetId, failedDirection: error.failedDirection, failedAngle: error.failedAngle, completedDirections: error.completedDirections });
       return json(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
   };
