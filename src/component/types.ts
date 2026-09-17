@@ -1,10 +1,15 @@
-export interface Frame { key: string; src: string; frame?: number }
-export interface DirectionalFrame extends Frame { angle: number }
-export interface AngleMap { version: 1; center: Frame; directions: DirectionalFrame[] }
+import type { AvatarFrameSet, AvatarFrameSetInput, AvatarFrame, DirectionalAvatarFrame, LegacyAngleMap } from '../core/avatarFrameSet.js';
+export type Frame = AvatarFrame;
+export type DirectionalFrame = DirectionalAvatarFrame;
+export type AngleMap = LegacyAngleMap;
 export interface DebugState { angle: number; key: string; isCenter: boolean }
 export interface AvatarOptions {
-  frameBasePath: string;
-  angleMap: string | AngleMap;
+  /** v2 direct frame input. Sources may be relative paths or absolute URLs. */
+  frames?: string | AvatarFrameSetInput;
+  /** Optional base for relative frame sources. Defaults to document.baseURI. */
+  frameBasePath?: string;
+  /** @deprecated Use frames. Retained for v1 compatibility. */
+  angleMap?: string | AngleMap;
   size?: number | string;
   width?: number | string;
   height?: number | string;
@@ -16,3 +21,4 @@ export interface AvatarOptions {
   onFrameChange?: (state: DebugState) => void;
   onError?: (error: Error) => void;
 }
+export type { AvatarFrameSet, AvatarFrameSetInput, AvatarFrame, DirectionalAvatarFrame, LegacyAngleMap };

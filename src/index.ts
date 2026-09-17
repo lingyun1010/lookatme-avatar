@@ -1,3 +1,12 @@
 export { LookAtMeAvatar } from './component/LookAtMeAvatar.js';
-export type { AvatarOptions, AngleMap, DebugState, Frame, DirectionalFrame } from './component/types.js';
+export type { AvatarOptions, AngleMap, DebugState, Frame, DirectionalFrame, AvatarFrameSet, AvatarFrameSetInput, AvatarFrame, DirectionalAvatarFrame } from './component/types.js';
 export { selectFrame, validateAngleMap } from './core/frameSelector.js';
+export { mountDirectionalAvatar } from './core/runtime.js';
+export { createLookAtMeAvatar } from './vanilla.js';
+export { normalizeFrameSet } from './core/avatarFrameSet.js';
+export type { AvatarFrameProducer, AvatarFrameSetMetadata, AvatarSourceType } from './core/avatarFrameSet.js';
+export { ManualFrameProducer } from './producers/manual.js';
+export { normalizeVideoFrames } from './producers/video/normalizeVideoFrames.js';
+export { avatarStyles, getAvatarStyle } from './producers/photo/styles.js';
+export { defaultPhotoDirections, directionAngles } from './producers/photo/directions.js';
+export type { PhotoFrameProducerInput, PhotoFrameProducer, AvatarDirection, AvatarStyleId, ImageGenerationProvider, AvatarImageStorage, GeneratedImage, GeneratedImageValidator } from './producers/photo/types.js';

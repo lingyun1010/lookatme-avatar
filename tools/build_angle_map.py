@@ -52,7 +52,21 @@ def build(frames, selection, output, max_size=768):
                 image.save(staging / 'frames' / filename, optimize=True)
             mapped.append({**entry, 'src': filename})
         angle_map = {'version': 1, 'center': mapped[0], 'directions': mapped[1:]}
+        with Image.open(staging / 'frames' / mapped[0]['src']) as center_image:
+            output_width, output_height = center_image.size
+        frame_set = {
+            'version': 2,
+            'center': mapped[0],
+            'directions': mapped[1:],
+            'metadata': {
+                'width': output_width,
+                'height': output_height,
+                'aspectRatio': output_width / output_height,
+                'source': {'type': 'video'},
+            },
+        }
         (staging / 'angle-map.json').write_text(json.dumps(angle_map, indent=2) + '\n')
+        (staging / 'avatar-frame-set.json').write_text(json.dumps(frame_set, indent=2) + '\n')
         make_sheets([staging/'frames'/entry['src'] for entry in mapped], staging/'contact-sheet.jpg', labels=[f"{e['key']} / frame {e['frame']}" for e in mapped])
         shutil.copy2(Path(__file__).with_name('preview.html'), staging/'preview.html')
         bundle = Path(__file__).resolve().parents[1]/'lib/vanilla.js'
@@ -61,7 +75,7 @@ def build(frames, selection, output, max_size=768):
         shutil.copy2(bundle, staging/'lookatme.js')
         output.mkdir(exist_ok=True)
         shutil.copytree(staging, output, dirs_exist_ok=True)
-    return angle_map
+    return frame_set
 
 
 if __name__ == '__main__':

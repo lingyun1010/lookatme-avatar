@@ -17,12 +17,19 @@ class PipelineTests(unittest.TestCase):
                 Image.new('RGBA', (80, 100), (10, 20, 30, 0)).save(frames/f'{number:06d}.png')
             selection = {'center': {'frame': 7}, 'directions': [{'key': 'east', 'angle': 13, 'frame': 1}]}
             result = build(frames, selection, root/'output', 50)
+            self.assertEqual(result['version'], 2)
+            self.assertEqual(result['metadata']['source']['type'], 'video')
             self.assertEqual(result['directions'][0]['frame'], 1)
             self.assertEqual(result['directions'][0]['angle'], 13)
             with Image.open(root/'output/frames/center.png') as image:
                 self.assertEqual(image.size, (40,50))
                 self.assertEqual(image.getpixel((0,0))[3], 0)
             self.assertTrue((root/'output/preview.html').exists())
+            self.assertTrue((root/'output/avatar-frame-set.json').exists())
+            self.assertTrue((root/'output/angle-map.json').exists())
+            preview = (root/'output/preview.html').read_text()
+            self.assertIn("frames: './avatar-frame-set.json'", preview)
+            self.assertIn('createLookAtMeAvatar', preview)
             with self.assertRaises(ValueError): build(frames, selection, root/'output')
             selection['directions'][0]['key'] = '../bad'
             with self.assertRaises(ValueError): build(frames, selection, root/'bad')

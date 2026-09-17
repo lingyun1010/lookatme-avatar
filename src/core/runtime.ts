@@ -1,13 +1,16 @@
 import type { AvatarOptions } from '../component/types.js';
 import { pointerAngle } from './angle.js';
-import { selectFrame, validateAngleMap } from './frameSelector.js';
+import { selectFrame } from './frameSelector.js';
+import { normalizeFrameSet } from './avatarFrameSet.js';
 import { preload } from './preload.js';
 const length = (value: number | string) => typeof value === 'number' ? `${value}px` : value;
-export function mountAvatar(element: HTMLElement, options: AvatarOptions) {
+export function mountDirectionalAvatar({ container: element, ...options }: AvatarOptions & { container: HTMLElement }) {
   const deadZone = options.deadZone ?? .12;
   if (!Number.isFinite(deadZone) || deadZone < 0 || deadZone > 1) throw new Error('deadZone must be between 0 and 1.');
+  const source = options.frames ?? options.angleMap;
+  if (!source) throw new Error('frames is required. Legacy callers may provide angleMap.');
   const container = document.createElement('div');
-  Object.assign(container.style, { position: 'relative', width: length(options.width ?? options.size ?? 600), height: options.height === undefined ? 'auto' : length(options.height), aspectRatio: '1', maxWidth: '100%', pointerEvents: 'none', overflow: 'hidden' });
+  Object.assign(container.style, { position: 'relative', width: length(options.width ?? options.size ?? 600), height: options.height === undefined ? 'auto' : length(options.height), aspectRatio: 'auto', maxWidth: '100%', pointerEvents: 'none', overflow: 'hidden' });
   container.setAttribute('role', 'img');
   container.setAttribute('aria-label', options.alt ?? 'Character following the pointer');
   container.setAttribute('aria-busy', 'true');
@@ -16,15 +19,20 @@ export function mountAvatar(element: HTMLElement, options: AvatarOptions) {
   let destroyed = false;
   let cleanup = () => {};
   const ready = (async () => {
-    let data = options.angleMap;
+    let data = source;
     if (typeof data === 'string') {
       const response = await fetch(data, { signal: abort.signal });
-      if (!response.ok) throw new Error(`Angle map request failed: ${response.status}`);
+      if (!response.ok) throw new Error(`Avatar frame set request failed: ${response.status}`);
       data = await response.json();
     }
-    const map = validateAngleMap(data);
+    const map = normalizeFrameSet(data);
     const images = await preload([map.center, ...map.directions], options.frameBasePath);
     if (destroyed) return;
+    if (options.height === undefined) {
+      const centerImage = images.get(map.center.key)!;
+      const intrinsicRatio = centerImage.naturalWidth && centerImage.naturalHeight ? centerImage.naturalWidth / centerImage.naturalHeight : undefined;
+      container.style.aspectRatio = String(map.metadata?.aspectRatio ?? intrinsicRatio ?? 1);
+    }
     for (const image of images.values()) {
       image.alt = '';
       Object.assign(image.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', objectFit: options.objectFit ?? 'contain', visibility: 'hidden', pointerEvents: 'none' });
@@ -83,4 +91,9 @@ export function mountAvatar(element: HTMLElement, options: AvatarOptions) {
     throw error;
   });
   return { ready, destroy() { destroyed = true; abort.abort(); cleanup(); container.remove(); } };
+}
+
+/** @deprecated Prefer mountDirectionalAvatar({ container, frames }). */
+export function mountAvatar(element: HTMLElement, options: AvatarOptions) {
+  return mountDirectionalAvatar({ container: element, ...options });
 }

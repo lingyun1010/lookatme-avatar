@@ -1,1 +1,1 @@
-{"extends":"./tsconfig.json","compilerOptions":{"outDir":"lib","declaration":true},"include":["src/core","src/component","src/index.ts","src/vanilla.ts"]}
+{"extends":"./tsconfig.json","compilerOptions":{"outDir":"lib","declaration":true},"include":["src/core","src/component","src/producers","src/server","src/index.ts","src/vanilla.ts","src/server.ts"]}

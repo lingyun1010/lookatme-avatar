@@ -1,5 +1,5 @@
-import type { Frame } from '../component/types.js';
-export async function preload(frames: Frame[], basePath: string): Promise<Map<string, HTMLImageElement>> {
+import type { AvatarFrame } from './avatarFrameSet.js';
+export async function preload(frames: AvatarFrame[], basePath = '.'): Promise<Map<string, HTMLImageElement>> {
   const base = new URL(basePath.replace(/\/?$/, '/'), document.baseURI);
   return new Map(await Promise.all(frames.map(async frame => {
     const image = new Image();

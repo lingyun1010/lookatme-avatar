@@ -1,0 +1,6 @@
+import type { AvatarStyleDefinition } from './styles.js';
+import type { AvatarDirection } from './types.js';
+const continuity = 'Keep the same identity, hairstyle, clothing, proportions, camera distance, crop, subject scale, background, and lighting. Keep the shoulders almost front-facing. This is one frame in a mouse-following avatar set.';
+export function centerPrompt(style: AvatarStyleDefinition): string { return `${style.prompt} Create a neutral, centered, front-facing head-and-shoulders avatar. ${continuity} Avoid: ${style.negativePrompt}`; }
+const poses: Record<AvatarDirection, string> = { left: 'Turn the head and gaze subtly toward the viewer’s left, approximately 20 degrees.', right: 'Turn the head and gaze subtly toward the viewer’s right, approximately 20 degrees.', up: 'Tilt the gaze and face subtly upward, approximately 15 degrees.', down: 'Tilt the gaze and face subtly downward, approximately 15 degrees.' };
+export function directionPrompt(style: AvatarStyleDefinition, direction: AvatarDirection): string { return `Edit this canonical avatar into the ${direction} directional frame. ${poses[direction]} ${continuity} Preserve the exact visual style of the reference. Avoid: ${style.negativePrompt}`; }
