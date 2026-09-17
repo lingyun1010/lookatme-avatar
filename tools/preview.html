@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LookAtMe — generated preview</title><style>body{font:16px system-ui;background:#eceee6;color:#303b2a;text-align:center;margin:24px}#avatar{max-width:600px;margin:auto;border:1px dashed #86947b;border-radius:16px}output{display:block;margin:16px;font-family:monospace}</style><h1>LookAtMe</h1><p>Move your pointer around the character. Return to the middle for neutral.</p><div id="avatar"></div><output id="debug">Loading frames…</output><script type="module">
 import { createLookAtMeAvatar } from './lookatme.js';
 const debug = document.querySelector('#debug');
-const avatar = createLookAtMeAvatar({ element: '#avatar', frameBasePath: './frames', angleMap: './angle-map.json', onFrameChange: s => {debug.textContent = `${s.key} · ${s.angle.toFixed(1)}°`;}});
+const avatar = createLookAtMeAvatar({ container: '#avatar', frameBasePath: './frames', frames: './avatar-frame-set.json', onFrameChange: s => {debug.textContent = `${s.key} · ${s.angle.toFixed(1)}°`;}});
 avatar.ready.catch(error => {debug.textContent = error.message;});
 </script></html>

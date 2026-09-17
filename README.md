@@ -6,6 +6,37 @@ Turn an AI-generated character video into a lightweight mouse-following web avat
 
 LookAtMe is a small, reusable **pseudo-3D, 2D frame-based interaction**. It selects a still image that faces the pointer. It is not a rigged 3D model, a video player, or a portfolio generator.
 
+## LookAtMe v2 architecture
+
+v2 separates frame production from pointer rendering. The renderer has no video, AI-provider, filename, dimension, or character-specific assumptions:
+
+```text
+Video → VideoFrameProducer ─┐
+                            ├→ AvatarFrameSet → DirectionalAvatarRenderer
+Photo → PhotoAIFrameProducer ─┘
+Manual/static images ────────→ AvatarFrameSet → DirectionalAvatarRenderer
+```
+
+The stable renderer-facing contract preserves arbitrary and uneven direction angles:
+
+```ts
+interface AvatarFrameSet {
+  version: 2;
+  center: { key: string; src: string; frame?: number };
+  directions: Array<{ key: string; src: string; angle: number; frame?: number }>;
+  metadata?: {
+    width?: number;
+    height?: number;
+    aspectRatio?: number;
+    source?: { type: 'video' | 'photo' | 'manual' | string };
+  };
+}
+```
+
+`center` and at least one direction are required. Additional directions are optional: nearest-angle selection is the predictable fallback when diagonals or other poses are absent. Sources can be relative image paths, absolute URLs, or browser-supported data/blob URLs. Metadata belongs to producers and is ignored by the renderer.
+
+The video tools, manual adapter, and server-side `PhotoAIFrameProducer` are independent producers. Photo generation creates a canonical styled center from the portrait first, then uses that center as the identity reference for left, right, up, and down. All three paths finish as the same `AvatarFrameSet`.
+
 ```text
 Character Image
       ↓
@@ -60,7 +91,7 @@ The skill sets up an isolated project, installs project dependencies, extracts f
 
 **Selection is AI-assisted, not automatic pose estimation.** It must inspect this video's images, never divide its timeline into equal angles. If the assistant cannot inspect images, it asks you t[...]
 
-The result contains reusable `frames/`, `angle-map.json`, `contact-sheet.jpg`, `lookatme.js` and `preview.html`. The local server must remain running; the assistant provides its URL and restart co[...]
+The result contains reusable `frames/`, canonical `avatar-frame-set.json`, backward-compatible `angle-map.json`, `contact-sheet.jpg`, `lookatme.js` and `preview.html`. The local server must remain running; the assistant provides its URL and restart command. The [public demo](https://lingyun1010.github.io/lookatme/) is a sample, not an upload service.
 
 ## Try the included character
 
@@ -82,6 +113,43 @@ npm run preview
 ```
 
 `dist/` is the standalone demo. `lib/` contains the reusable React library, types, and a bundled vanilla module. No Python, FFmpeg, AI service, API key, or server is needed at runtime.
+
+## Photo AI demo
+
+Photo generation is server-only. Copy the environment template and provide an API key—the key is read by Vite's local server middleware and is never included in browser code:
+
+```bash
+cp .env.example .env
+# Edit .env and set OPENAI_API_KEY
+npm run dev
+```
+
+Open the printed localhost URL and use the **Photo AI** section. The server validates and normalizes PNG, JPEG, or WebP portraits, generates five 1024×1024 PNG frames, stores them under ignored `.lookatme/generated/`, and returns their local URLs in an `AvatarFrameSet`.
+
+The OpenAI adapter uses the Image API's edit endpoint with `gpt-image-2`, medium quality, high input fidelity, and PNG output. The library's provider boundary is independent of OpenAI:
+
+```ts
+import {
+  LocalAvatarImageStorage,
+  OpenAIImageGenerationProvider,
+  PhotoAIFrameProducer,
+  SharpGeneratedImageValidator
+} from 'lookatme-avatar/server';
+
+const producer = new PhotoAIFrameProducer({
+  provider: new OpenAIImageGenerationProvider(),
+  storage: new LocalAvatarImageStorage('.lookatme/generated'),
+  validator: new SharpGeneratedImageValidator()
+});
+
+const frames = await producer.produce({
+  image: uploadedBytes,
+  mimeType: 'image/jpeg',
+  style: 'felt@1'
+});
+```
+
+Styles are versioned (`felt@1`, `cartoon@1`, `cinematic-3d@1`, and `anime@1`). A partial directional failure reports the frame-set ID and completed directions; `regenerateDirection()` can replace only the failed frame.
 
 ## Prepare your own video
 
@@ -130,6 +198,7 @@ output/
 │   ├── e.png
 │   └── ...
 ├── angle-map.json
+├── avatar-frame-set.json Canonical v2 contract with video provenance
 ├── contact-sheet.jpg    Selected views, labelled with source indices
 ├── preview.html
 └── lookatme.js          Standalone vanilla runtime for the preview
@@ -167,7 +236,7 @@ export function Character() {
   return (
     <LookAtMeAvatar
       frameBasePath="./avatar/frames"
-      angleMap="./avatar/angle-map.json"
+      frames="./avatar/avatar-frame-set.json"
       size={600}
       deadZone={0.12}
     />
@@ -193,8 +262,9 @@ A leading `/avatar` always refers to the domain root; it will not automatically 
 
 | Prop | Default | Meaning |
 | --- | --- | --- |
-| `frameBasePath` | required | Directory holding frame images |
-| `angleMap` | required | JSON URL or validated map object |
+| `frames` | required | `AvatarFrameSet`, legacy v1 map, or JSON URL |
+| `frameBasePath` | `.` | Base directory for relative frame sources |
+| `angleMap` | unset | Deprecated v1 alias for `frames` |
 | `size` | `600` | Width in pixels or CSS length; square when height omitted |
 | `width`, `height` | unset | Override dimensions; width is capped at 100% of parent |
 | `objectFit` | `contain` | Image fitting mode |
@@ -215,9 +285,9 @@ Copy `lib/vanilla.js` into your website alongside your generated assets. It has 
 <script type="module">
   import { createLookAtMeAvatar } from './vanilla.js';
   const avatar = createLookAtMeAvatar({
-    element: '#lookatme-avatar',
+    container: '#lookatme-avatar',
     frameBasePath: './avatar/frames',
-    angleMap: './avatar/angle-map.json',
+    frames: './avatar/avatar-frame-set.json',
     size: 600,
     deadZone: 0.12
   });
@@ -227,6 +297,20 @@ Copy `lib/vanilla.js` into your website alongside your generated assets. It has 
 ```
 
 Bundler consumers can import from `lookatme-avatar/vanilla`. Options match React. `element` accepts a selector or HTMLElement; only the owned avatar child is removed on teardown.
+
+`container` is the v2 mount option; the original `element` name remains supported. Both adapters call the same engine:
+
+```ts
+import { mountDirectionalAvatar } from 'lookatme-avatar';
+
+const avatar = mountDirectionalAvatar({ container, frames, deadZone: 0.12 });
+await avatar.ready;
+avatar.destroy(); // listeners, RAF work, observer, fetch, and owned DOM are cleaned up
+```
+
+### v1 migration and compatibility
+
+Existing `angleMap` + `frameBasePath` React usage and `element` + `angleMap` vanilla usage continue to work. v1 maps are normalized to v2 at the renderer boundary. New code should rename `angleMap` to `frames`, use `container` in vanilla JavaScript, and prefer the generated `avatar-frame-set.json`. No frame assets or direction angles need to change.
 
 ## Angle map and architecture
 
@@ -241,11 +325,19 @@ Bundler consumers can import from `lookatme-avatar/vanilla`. Options match React
 }
 ```
 
+<<<<<<< HEAD
 Angles use screen coordinates: **east 0°, south 90°, west 180°, north 270°**. The runtime picks the smallest circular angular distance. Equal distances prefer the first configured entry. `fra[...]
+=======
+Angles use screen coordinates: **east 0°, south 90°, west 180°, north 270°**. The runtime picks the smallest circular angular distance. Equal distances prefer the first configured entry. `frame` is provenance only. Relative sources are joined to `frameBasePath`; absolute and browser-supported image URLs pass through unchanged. Keys and angles must be unique.
+>>>>>>> 390f783 (Generate directionl frames by OpenAI)
 
 - `tools/`: video inspection/extraction, paginated contact sheets, explicit selections → optimised static output.
 - `example/`: reusable sample assets and mappings; Vite serves this as its public asset directory.
 - `src/core/`: pure geometry, map validation, decoding, shared pointer/render lifecycle.
+- `src/producers/video/`: adapts the existing video pipeline output to `AvatarFrameSet`.
+- `src/producers/photo/`: provider-independent photo contracts, styles, prompts, and direction mapping.
+- `src/server/photo/`: Sharp preprocessing/validation, local storage, OpenAI adapter, orchestration, and local demo middleware.
+- `src/producers/manual.ts`: validation adapter for supplied/static frame sets.
 - `src/component/`: typed React adapter. Pointer lifecycle stays in the shared runtime instead of a React-specific hook.
 - `src/vanilla.ts`: framework-free adapter; builds to a single ES module.
 - `src/demo/`: neutral playground, isolated from library code.
@@ -267,4 +359,4 @@ The official demo is live at https://lingyun1010.github.io/lookatme/. For your o
 
 New LookAtMe code is MIT licensed; see `LICENSE`. Sample character assets and the selected-frame contact sheet were supplied by Lingyun Zhao's [reference portfolio](https://github.com/lingyun1010[...]
 
-No authentication, database, AI generation APIs, payments, portfolio content or automatic pose estimation are included.
+No authentication, database, payments, production CDN, job queue, advanced identity scoring, or automatic pose estimation are included.

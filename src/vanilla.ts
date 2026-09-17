@@ -1,8 +1,11 @@
-import { mountAvatar } from './core/runtime.js';
+import { mountDirectionalAvatar } from './core/runtime.js';
 import type { AvatarOptions } from './component/types.js';
-export function createLookAtMeAvatar({ element, ...options }: AvatarOptions & { element: string | HTMLElement }) {
-  const target = typeof element === 'string' ? document.querySelector<HTMLElement>(element) : element;
-  if (!target) throw new Error(`Avatar mount element not found: ${element}`);
-  return mountAvatar(target, options);
+export function createLookAtMeAvatar({ container, element, ...options }: AvatarOptions & { container?: string | HTMLElement; element?: string | HTMLElement }) {
+  const mount = container ?? element;
+  const target = typeof mount === 'string' ? document.querySelector<HTMLElement>(mount) : mount;
+  if (!target) throw new Error(`Avatar mount element not found: ${String(mount)}`);
+  return mountDirectionalAvatar({ container: target, ...options });
 }
-export type { AvatarOptions, AngleMap, DebugState } from './component/types.js';
+export { mountDirectionalAvatar } from './core/runtime.js';
+export { normalizeFrameSet } from './core/avatarFrameSet.js';
+export type { AvatarOptions, AngleMap, DebugState, AvatarFrameSet, AvatarFrameSetInput } from './component/types.js';
