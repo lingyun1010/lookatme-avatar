@@ -35,7 +35,7 @@ export function createPhotoDemoMiddleware(root = path.resolve('.lookatme/generat
       if (!(image instanceof File) || typeof style !== 'string') return json(response, 400, { error: 'An image and style are required.' });
       // Temporary local transparency test: generate CENTER ONLY; leave SDK production presets unchanged.
       const portrait = await preprocessPortrait({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId });
-      const center = await new OpenAIImageGenerationProvider({ model: 'gpt-image-2.5-sunburst', size: '1024x1024', quality: 'low', background: 'transparent' }).generate({ reference: portrait, prompt: centerPrompt(getAvatarStyle(style as AvatarStyleId)) });
+      const center = await new OpenAIImageGenerationProvider({ model: 'gpt-image-2', size: '1024x1024', quality: 'low', background: 'transparent' }).generate({ reference: portrait, prompt: centerPrompt(getAvatarStyle(style as AvatarStyleId)) });
       await new TransparentPngValidator().inspect(center);
       const frameSetId = storage.createFrameSetId();
       const stored = await storage.put(frameSetId, 'center', center);
