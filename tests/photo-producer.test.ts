@@ -105,7 +105,7 @@ test('strict transparency validator rejects opaque PNG and accepts alpha transpa
 });
 
 test('optional image processor runs before validation and persistence on every frame', async () => {
-  const opaque = await fixture(24, 24);
+  const opaque = await fixture(512, 512);
   const provider = new MockProvider(opaque);
   const storage = new MemoryStorage();
   const transparent: GeneratedImage = {
