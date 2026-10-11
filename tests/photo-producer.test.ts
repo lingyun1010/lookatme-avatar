@@ -8,7 +8,7 @@ import { avatarStyles, getAvatarStyle } from '../src/producers/photo/styles.js';
 import type { AvatarDirection, AvatarImageStorage, GeneratedImage, ImageGenerationProvider, ImageGenerationRequest } from '../src/producers/photo/types.js';
 import { PartialPhotoGenerationError, PhotoAIFrameProducer } from '../src/server/photo/PhotoAIFrameProducer.js';
 import { preprocessPortrait } from '../src/server/photo/preprocess.js';
-import { SharpGeneratedImageValidator } from '../src/server/photo/validation.js';
+import { SharpGeneratedImageValidator, TransparentPngValidator } from '../src/server/photo/validation.js';
 
 class MemoryStorage implements AvatarImageStorage {
   images = new Map<string, GeneratedImage>();
@@ -87,4 +87,39 @@ test('arbitrary-angle frame regeneration supports smooth preset frames', async (
   const generated = await fixture(); const provider = new MockProvider(generated); const storage = new MemoryStorage(); storage.images.set('set-1/center', generated);
   const { instance } = producer(provider, storage); const result = await instance.regenerateFrame('set-1', 'anime@1', 30);
   assert.equal(result.src, '/generated/set-1/angle-030.png'); assert.match(provider.calls[0].prompt, /30 degrees/);
+});
+
+test('strict transparency validator rejects opaque PNG and accepts alpha transparency', async () => {
+  const opaque = await fixture(24, 24);
+  await assert.rejects(() => new TransparentPngValidator().inspect(opaque), /alpha channel/);
+  const transparent: GeneratedImage = {
+    data: await sharp({ create: { width: 24, height: 24, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer(),
+    mimeType: 'image/png',
+  };
+  assert.equal((await new TransparentPngValidator().inspect(transparent)).width, 24);
+  const fakeAlpha: GeneratedImage = {
+    data: await sharp({ create: { width: 24, height: 24, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } }).png().toBuffer(),
+    mimeType: 'image/png',
+  };
+  await assert.rejects(() => new TransparentPngValidator().inspect(fakeAlpha), /no transparent pixels/);
+});
+
+test('optional image processor runs before validation and persistence on every frame', async () => {
+  const opaque = await fixture(24, 24);
+  const provider = new MockProvider(opaque);
+  const storage = new MemoryStorage();
+  const transparent: GeneratedImage = {
+    data: await sharp({ create: { width: 24, height: 24, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer(),
+    mimeType: 'image/png',
+  };
+  let processed = 0;
+  const producer = new PhotoAIFrameProducer({
+    provider, storage, validator: new TransparentPngValidator(),
+    processor: { async process(image) { assert.equal(image, opaque); processed++; return transparent; } },
+  });
+  const frameSet = await producer.produce({ image: opaque.data, style: 'felt@1', preset: 'fast' });
+  assert.equal(processed, 5);
+  assert.equal(frameSet.directions.length, 4);
+  assert.equal(storage.images.size, 5);
+  for (const call of provider.calls.slice(1)) assert.equal(call.reference, transparent);
 });
