@@ -123,3 +123,13 @@ test('optional image processor runs before validation and persistence on every f
   assert.equal(storage.images.size, 5);
   for (const call of provider.calls.slice(1)) assert.equal(call.reference, transparent);
 });
+
+test('native OpenAI transparency is requested and demo rejects opaque frames', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const providerSource = await readFile(new URL('../src/server/photo/openaiProvider.ts', import.meta.url), 'utf8');
+  const demoSource = await readFile(new URL('../src/server/photo/demoMiddleware.ts', import.meta.url), 'utf8');
+  assert.match(providerSource, /this\.background = options\.background \?\? 'transparent'/);
+  assert.match(providerSource, /output_format: 'png', background: this\.background/);
+  assert.match(demoSource, /validator: new TransparentPngValidator\(\)/);
+  assert.doesNotMatch(demoSource, /RemoveBgProcessor/);
+});
