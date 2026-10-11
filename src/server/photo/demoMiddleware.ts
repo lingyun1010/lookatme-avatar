@@ -6,7 +6,7 @@ import type { AvatarFramePreset, AvatarStyleId } from '../../producers/photo/typ
 import { LocalAvatarImageStorage } from './localStorage.js';
 import { OpenAIImageGenerationProvider } from './openaiProvider.js';
 import { PartialPhotoGenerationError, PhotoAIFrameProducer } from './PhotoAIFrameProducer.js';
-import { SharpGeneratedImageValidator } from './validation.js';
+import { TransparentPngValidator } from './validation.js';
 
 const maxRequestBytes = 21 * 1024 * 1024;
 async function body(request: IncomingMessage): Promise<Buffer> {
@@ -31,7 +31,7 @@ export function createPhotoDemoMiddleware(root = path.resolve('.lookatme/generat
       const raw = await body(request); const requestBody = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer; const form = await new Request('http://localhost/api/photo-avatar', { method: 'POST', headers: request.headers as HeadersInit, body: requestBody }).formData();
       const image = form.get('image'); const style = form.get('style'); const preset = form.get('preset') ?? 'balanced';
       if (!(image instanceof File) || typeof style !== 'string' || typeof preset !== 'string') return json(response, 400, { error: 'An image, style, and preset are required.' });
-      const producer = new PhotoAIFrameProducer({ provider: new OpenAIImageGenerationProvider(), storage, validator: new SharpGeneratedImageValidator() });
+      const producer = new PhotoAIFrameProducer({ provider: new OpenAIImageGenerationProvider(), storage, validator: new TransparentPngValidator() });
       const frames = await producer.produce({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId, preset: preset as AvatarFramePreset });
       return json(response, 200, frames);
     } catch (error) {
