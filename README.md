@@ -125,6 +125,21 @@ const frames = await producer.produce({
 
 Do not import `lookatme-avatar/server` from browser code. It intentionally depends on Node.js, `openai`, `sharp`, and filesystem helpers. Production applications can replace local storage by implementing `AvatarImageStorage` for S3, Cloudflare R2, Vercel Blob, Supabase Storage, or another durable store.
 
+### Native transparent background experiment
+
+The photo API adapter requests `background: 'transparent'` directly from OpenAI,
+with PNG output, and the local demo requires actual transparent pixels before
+saving each frame. No secondary background removal service is used.
+
+**Compatibility warning:** The previously tested `gpt-image-2` endpoint returned
+HTTP 400 for this parameter. This branch intentionally fails clearly if the
+currently available model does not support it; it does not silently fall back
+to `auto` or save opaque images. Model/API availability must be verified with
+a single real center-frame request before generating an entire set.
+
+To compare against the model's automatic background behavior, construct the
+provider with `background: 'auto'` explicitly. This does not guarantee alpha.
+
 ### Generation flow
 
 ```text

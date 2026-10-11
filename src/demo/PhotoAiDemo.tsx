@@ -5,11 +5,11 @@ import { avatarStyles } from '../producers/photo/styles.js';
 import type { AvatarFramePreset, AvatarStyleId } from '../producers/photo/types.js';
 import './photo-ai.css';
 export function PhotoAiDemo() {
-  const [file, setFile] = useState<File>(); const [style, setStyle] = useState<AvatarStyleId>('felt@1'); const [preset, setPreset] = useState<AvatarFramePreset>('balanced');
+  const [file, setFile] = useState<File>(); const [style, setStyle] = useState<AvatarStyleId>('felt@1'); const [preset, setPreset] = useState<AvatarFramePreset>('fast');
   const [status, setStatus] = useState('Choose a portrait to begin.'); const [frames, setFrames] = useState<AvatarFrameSet>(); const [busy, setBusy] = useState(false);
   async function generate(event: FormEvent) {
     event.preventDefault(); if (!file) return setStatus('Choose a PNG, JPEG, or WebP portrait first.');
-    setBusy(true); setFrames(undefined); setStatus(`Generating the canonical center, then the ${preset} directional set…`);
+    setBusy(true); setFrames(undefined); setStatus(`Generating the center and ${preset} directional frames…`);
     try { const form = new FormData(); form.set('image', file); form.set('style', style); form.set('preset', preset); const response = await fetch('/api/photo-avatar', { method: 'POST', body: form }); const value = await response.json(); if (!response.ok) throw new Error(value.error ?? 'Generation failed.'); setFrames(value); setStatus(`${value.directions.length + 1}-frame AvatarFrameSet ready — move your pointer around the avatar.`); }
     catch (error) { setStatus(error instanceof Error ? error.message : String(error)); } finally { setBusy(false); }
   }
