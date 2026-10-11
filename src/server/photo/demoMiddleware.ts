@@ -4,7 +4,7 @@ import path from 'node:path';
 import { avatarStyles, getAvatarStyle } from '../../producers/photo/styles.js';
 import { centerPrompt } from '../../producers/photo/prompts.js';
 import { preprocessPortrait } from './preprocess.js';
-import type { AvatarFramePreset, AvatarStyleId } from '../../producers/photo/types.js';
+import type { AvatarStyleId } from '../../producers/photo/types.js';
 import { LocalAvatarImageStorage } from './localStorage.js';
 import { OpenAIImageGenerationProvider } from './openaiProvider.js';
 
@@ -31,8 +31,8 @@ export function createPhotoDemoMiddleware(root = path.resolve('.lookatme/generat
     if (request.method !== 'POST' || pathname !== '/api/photo-avatar') return next();
     try {
       const raw = await body(request); const requestBody = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer; const form = await new Request('http://localhost/api/photo-avatar', { method: 'POST', headers: request.headers as HeadersInit, body: requestBody }).formData();
-      const image = form.get('image'); const style = form.get('style'); const preset = form.get('preset') ?? 'balanced';
-      if (!(image instanceof File) || typeof style !== 'string' || typeof preset !== 'string') return json(response, 400, { error: 'An image, style, and preset are required.' });
+      const image = form.get('image'); const style = form.get('style');
+      if (!(image instanceof File) || typeof style !== 'string') return json(response, 400, { error: 'An image and style are required.' });
       // Temporary local transparency test: generate CENTER ONLY; leave SDK production presets unchanged.
       const portrait = await preprocessPortrait({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId });
       const center = await new OpenAIImageGenerationProvider().generate({ reference: portrait, prompt: centerPrompt(getAvatarStyle(style as AvatarStyleId)) });
