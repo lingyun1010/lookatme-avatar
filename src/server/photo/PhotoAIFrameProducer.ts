@@ -2,7 +2,7 @@ import { normalizeFrameSet, type AvatarFrameSet } from '../../core/avatarFrameSe
 import { framePlanForAngle, getGenerationPlan } from '../../producers/photo/directions.js';
 import { centerPrompt, directionPrompt } from '../../producers/photo/prompts.js';
 import { getAvatarStyle } from '../../producers/photo/styles.js';
-import type { AvatarDirection, AvatarImageStorage, DirectionFramePlan, GeneratedImageValidator, ImageGenerationProvider, PhotoFrameProducer, PhotoFrameProducerInput } from '../../producers/photo/types.js';
+import type { AvatarDirection, AvatarImageStorage, DirectionFramePlan, GeneratedImageProcessor, GeneratedImageValidator, ImageGenerationProvider, PhotoFrameProducer, PhotoFrameProducerInput } from '../../producers/photo/types.js';
 import { preprocessPortrait } from './preprocess.js';
 import { assertCompatible } from './validation.js';
 
@@ -14,20 +14,22 @@ export class PartialPhotoGenerationError extends Error {
   }
 }
 
-export interface PhotoAIFrameProducerDependencies { provider: ImageGenerationProvider; storage: AvatarImageStorage; validator: GeneratedImageValidator }
+export interface PhotoAIFrameProducerDependencies { provider: ImageGenerationProvider; storage: AvatarImageStorage; validator: GeneratedImageValidator; processor?: GeneratedImageProcessor }
 
 export class PhotoAIFrameProducer implements PhotoFrameProducer {
   constructor(private readonly dependencies: PhotoAIFrameProducerDependencies) {}
   async produce(input: PhotoFrameProducerInput): Promise<AvatarFrameSet> {
     const style = getAvatarStyle(input.style); const generation = getGenerationPlan(input.preset, input.directions); const frameSetId = this.dependencies.storage.createFrameSetId();
     const portrait = await preprocessPortrait(input);
-    const centerImage = await this.dependencies.provider.generate({ reference: portrait, prompt: centerPrompt(style) });
+    const centerRaw = await this.dependencies.provider.generate({ reference: portrait, prompt: centerPrompt(style) });
+    const centerImage = this.dependencies.processor ? await this.dependencies.processor.process(centerRaw) : centerRaw;
     const centerInfo = await this.dependencies.validator.inspect(centerImage);
     const center = await this.dependencies.storage.put(frameSetId, 'center', centerImage);
     const generated: Array<{ key: string; angle: number; src: string }> = []; const completed: DirectionFramePlan[] = [];
     for (const frame of generation.frames) {
       try {
-        const image = await this.dependencies.provider.generate({ reference: centerImage, prompt: directionPrompt(style, frame) });
+        const raw = await this.dependencies.provider.generate({ reference: centerImage, prompt: directionPrompt(style, frame) });
+        const image = this.dependencies.processor ? await this.dependencies.processor.process(raw) : raw;
         assertCompatible(centerInfo, await this.dependencies.validator.inspect(image));
         const stored = await this.dependencies.storage.put(frameSetId, frame.key, image);
         generated.push({ key: frame.key, angle: frame.angle, src: stored.src }); completed.push(frame);
@@ -41,7 +43,8 @@ export class PhotoAIFrameProducer implements PhotoFrameProducer {
   }
   async regenerateFrame(frameSetId: string, styleId: PhotoFrameProducerInput['style'], angle: number) {
     const style = getAvatarStyle(styleId); const center = await this.dependencies.storage.read(frameSetId, 'center'); const frame = framePlanForAngle(angle);
-    const image = await this.dependencies.provider.generate({ reference: center, prompt: directionPrompt(style, frame) });
+    const raw = await this.dependencies.provider.generate({ reference: center, prompt: directionPrompt(style, frame) });
+    const image = this.dependencies.processor ? await this.dependencies.processor.process(raw) : raw;
     assertCompatible(await this.dependencies.validator.inspect(center), await this.dependencies.validator.inspect(image));
     return this.dependencies.storage.put(frameSetId, frame.key, image);
   }
