@@ -1,13 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { avatarStyles, getAvatarStyle } from '../../producers/photo/styles.js';
-import { centerPrompt } from '../../producers/photo/prompts.js';
-import { preprocessPortrait } from './preprocess.js';
-import type { AvatarStyleId } from '../../producers/photo/types.js';
+import { avatarStyles } from '../../producers/photo/styles.js';
+import type { AvatarFramePreset, AvatarStyleId } from '../../producers/photo/types.js';
 import { LocalAvatarImageStorage } from './localStorage.js';
 import { OpenAIImageGenerationProvider } from './openaiProvider.js';
-
+import { PartialPhotoGenerationError, PhotoAIFrameProducer } from './PhotoAIFrameProducer.js';
 import { TransparentPngValidator } from './validation.js';
 
 const maxRequestBytes = 21 * 1024 * 1024;
@@ -31,16 +29,17 @@ export function createPhotoDemoMiddleware(root = path.resolve('.lookatme/generat
     if (request.method !== 'POST' || pathname !== '/api/photo-avatar') return next();
     try {
       const raw = await body(request); const requestBody = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer; const form = await new Request('http://localhost/api/photo-avatar', { method: 'POST', headers: request.headers as HeadersInit, body: requestBody }).formData();
-      const image = form.get('image'); const style = form.get('style');
-      if (!(image instanceof File) || typeof style !== 'string') return json(response, 400, { error: 'An image and style are required.' });
-      // Temporary local transparency test: generate CENTER ONLY; leave SDK production presets unchanged.
-      const portrait = await preprocessPortrait({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId });
-      const center = await new OpenAIImageGenerationProvider({ model: 'gpt-image-2', size: '1024x1024', quality: 'low', background: 'transparent' }).generate({ reference: portrait, prompt: centerPrompt(getAvatarStyle(style as AvatarStyleId)) });
-      await new TransparentPngValidator().inspect(center);
-      const frameSetId = storage.createFrameSetId();
-      const stored = await storage.put(frameSetId, 'center', center);
-      return json(response, 200, { center: { key: 'center', src: stored.src }, directions: [] });
+      const image = form.get('image'); const style = form.get('style'); const preset = form.get('preset') ?? 'fast';
+      if (!(image instanceof File) || typeof style !== 'string' || typeof preset !== 'string' || !['fast', 'balanced', 'smooth'].includes(preset)) return json(response, 400, { error: 'An image, style, and valid preset are required.' });
+      const producer = new PhotoAIFrameProducer({
+        provider: new OpenAIImageGenerationProvider({ model: 'gpt-image-2.5-sunburst', size: '1024x1024', quality: 'low', background: 'transparent' }),
+        storage,
+        validator: new TransparentPngValidator(),
+      });
+      const frames = await producer.produce({ image: new Uint8Array(await image.arrayBuffer()), mimeType: image.type, style: style as AvatarStyleId, preset: preset as AvatarFramePreset });
+      return json(response, 200, frames);
     } catch (error) {
+      if (error instanceof PartialPhotoGenerationError) return json(response, 502, { error: error.message, frameSetId: error.frameSetId, failedDirection: error.failedDirection, failedAngle: error.failedAngle, completedDirections: error.completedDirections });
       return json(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
   };
