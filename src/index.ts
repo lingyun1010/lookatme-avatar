@@ -8,4 +8,4 @@ export { ManualFrameProducer } from './producers/manual.js';
 export { normalizeVideoFrames } from './producers/video/normalizeVideoFrames.js';
 export { avatarStyles, getAvatarStyle } from './producers/photo/styles.js';
 export { avatarFramePresets, defaultPhotoDirections, directionAngles, framePlanForAngle, getPresetPlan } from './producers/photo/directions.js';
-export type { PhotoFrameProducerInput, PhotoFrameProducer, AvatarDirection, AvatarFramePreset, DirectionFramePlan, AvatarStyleId, ImageGenerationProvider, AvatarImageStorage, GeneratedImage, GeneratedImageValidator } from './producers/photo/types.js';
+export type { PhotoFrameProducerInput, PhotoFrameProducer, AvatarDirection, AvatarFramePreset, DirectionFramePlan, AvatarStyleId, ImageGenerationProvider, AvatarImageStorage, GeneratedImage, GeneratedImageProcessor, GeneratedImageValidator } from './producers/photo/types.js';
