@@ -17,4 +17,5 @@ export interface AvatarImageStorage {
   read(frameSetId: string, key: string): Promise<GeneratedImage>;
 }
 export interface GeneratedImageInfo { width: number; height: number; aspectRatio: number }
+export interface GeneratedImageProcessor { process(image: GeneratedImage): Promise<GeneratedImage> }
 export interface GeneratedImageValidator { inspect(image: GeneratedImage): Promise<GeneratedImageInfo> }
